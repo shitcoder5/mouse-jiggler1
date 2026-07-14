@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#6aa5ff">
+<title>Mouse Jiggler</title>
+<style>
+:root{color-scheme:dark;--blue:#6aa5ff;--blue2:#3f7ef1;--ink:#071327;--panel:rgba(5,16,35,.88);--line:rgba(255,255,255,.18)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#05080d;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;color:#fff}
+button,input{font:inherit}
+#app{position:relative;width:100%;height:100%;min-height:100dvh;overflow:hidden;background:#05080d}
+#pattern{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+.shade{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 50% 44%,transparent 30%,rgba(0,0,0,.18) 74%,rgba(0,0,0,.55) 100%)}
+.setup{position:absolute;inset:0;display:grid;place-items:center;padding:max(20px,env(safe-area-inset-top)) 20px max(20px,env(safe-area-inset-bottom));background:linear-gradient(160deg,rgba(106,165,255,.97),rgba(63,126,241,.9) 50%,rgba(11,31,68,.94));transition:.3s opacity,.3s visibility}
+.setup.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.card{width:min(100%,390px);padding:25px;border:2px solid rgba(255,255,255,.5);border-radius:30px;background:rgba(5,17,40,.86);box-shadow:0 24px 80px rgba(2,12,35,.45);backdrop-filter:blur(18px)}
+.logo{display:flex;align-items:center;gap:13px;margin-bottom:24px}
+.logo-mark{width:52px;height:52px;display:grid;place-items:center;border-radius:17px;background:var(--blue);box-shadow:inset 0 0 0 2px rgba(255,255,255,.35);font-size:28px}
+h1{margin:0;font-size:28px;line-height:1;font-weight:800;letter-spacing:-.03em}
+.subtitle{margin:7px 0 0;color:#b9c9e8;font-size:14px}
+.check{display:flex;align-items:center;gap:12px;margin:0 0 20px;padding:15px;border:1px solid var(--line);border-radius:17px;background:rgba(255,255,255,.06);cursor:pointer;user-select:none}
+.check input{width:22px;height:22px;margin:0;accent-color:var(--blue)}
+.check span{font-weight:700}
+.speed-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:14px;font-weight:700}
+.speed-value{min-width:48px;text-align:right;color:#9dc2ff}
+.speed-group+.speed-group{margin-top:14px}
+input[type=range]{width:100%;height:34px;margin:0;accent-color:var(--blue);cursor:pointer}
+.range-labels{display:flex;justify-content:space-between;margin-top:2px;color:#93a6c7;font-size:12px}
+.actions{display:grid;margin-top:22px}
+button{min-height:54px;border:0;border-radius:17px;padding:0 18px;color:#fff;font-weight:850;letter-spacing:.02em;cursor:pointer}
+.start{background:linear-gradient(135deg,#7eb2ff,#397cf1);box-shadow:0 10px 28px rgba(63,126,241,.4)}
+.hint{margin:18px 4px 0;text-align:center;color:#aebed9;font-size:12px;line-height:1.45}
+.running-ui{position:absolute;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));opacity:0;visibility:hidden;transition:.25s opacity,.25s visibility}
+.running-ui.visible{opacity:1;visibility:visible}
+.topbar,.controlbar{pointer-events:auto;display:flex;align-items:center;gap:10px;width:min(100%,520px);margin-inline:auto;padding:9px;border:1px solid rgba(255,255,255,.18);border-radius:19px;background:var(--panel);box-shadow:0 12px 38px rgba(0,0,0,.28);backdrop-filter:blur(16px)}
+.topbar{justify-content:space-between}
+.status{display:flex;align-items:center;gap:9px;padding-left:5px;min-width:0;font-size:13px;font-weight:750}
+.dot{width:9px;height:9px;flex:0 0 auto;border-radius:50%;background:#64f4a4;box-shadow:0 0 14px #64f4a4}
+.status-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini-btn{min-height:40px;padding:0 13px;border-radius:12px;background:rgba(255,255,255,.1);font-size:12px;white-space:nowrap}
+.stop{background:#d94a62}
+.controlbar{display:grid;grid-template-columns:1fr auto;gap:10px 12px;padding:12px 14px}
+.vibe{display:flex;align-items:center;gap:7px;white-space:nowrap;font-size:12px;font-weight:750;cursor:pointer}
+.vibe input{width:19px;height:19px;margin:0;accent-color:var(--blue)}
+.live-sliders{grid-column:1/-1;display:grid;gap:8px}
+.live-speed{min-width:0}
+.live-speed label{display:flex;justify-content:space-between;margin-bottom:2px;font-size:11px;color:#c6d3e9}
+.live-speed input{height:28px}
+.cycle{justify-self:end;font-variant-numeric:tabular-nums;color:#9dc2ff;font-size:12px;font-weight:800;white-space:nowrap}
+@media(max-width:420px){.card{padding:21px;border-radius:25px}h1{font-size:25px}.topbar,.controlbar{border-radius:16px}.mini-btn{padding:0 11px}.status-text{max-width:180px}}
+@media(max-height:620px){.card{padding:18px}.logo{margin-bottom:15px}.check{margin-bottom:12px;padding:11px}.actions{margin-top:14px}.hint{margin-top:10px}button{min-height:48px}}
+</style>
+</head>
+<body>
+<main id="app">
+  <canvas id="pattern" aria-label="Движущийся контрастный паттерн для оптической мыши"></canvas>
+  <div class="shade"></div>
+
+  <section class="setup" id="setup">
+    <div class="card">
+      <div class="logo">
+        <div class="logo-mark">↗</div>
+        <div><h1>Mouse Jiggler</h1><p class="subtitle">Положите мышку сенсором на экран</p></div>
+      </div>
+
+      <label class="check" for="vibration">
+        <input id="vibration" type="checkbox">
+        <span>Включить вибрацию</span>
+      </label>
+
+      <div class="speed-group">
+        <div class="speed-head"><label for="speed">Скорость движения</label><output class="speed-value" id="speedValue">50%</output></div>
+        <input id="speed" type="range" min="1" max="100" value="50">
+        <div class="range-labels"><span>Медленно</span><span>Быстро</span></div>
+      </div>
+
+      <div class="speed-group">
+        <div class="speed-head"><label for="vibrationSpeed">Скорость вибрации</label><output class="speed-value" id="vibrationSpeedValue">50%</output></div>
+        <input id="vibrationSpeed" type="range" min="1" max="100" value="50">
+        <div class="range-labels"><span>Редко</span><span>Часто</span></div>
+      </div>
+
+      <div class="actions">
+        <button class="start" id="start" type="button">START</button>
+      </div>
+      <p class="hint">START сразу включает полный экран. Паттерн движется по замкнутым траекториям.</p>
+    </div>
+  </section>
+
+  <section class="running-ui" id="runningUi">
+    <div class="topbar">
+      <div class="status"><span class="dot"></span><span class="status-text" id="wakeStatus">Экран активен</span></div>
+      <div>
+        <button class="mini-btn stop" id="stop" type="button">Стоп</button>
+      </div>
+    </div>
+    <div class="controlbar">
+      <label class="vibe" for="liveVibration"><input id="liveVibration" type="checkbox">Вибрация</label>
+      <div class="cycle" id="cycle">Круг 1</div>
+      <div class="live-sliders">
+        <div class="live-speed"><label for="liveSpeed"><span>Скорость движения</span><output id="liveSpeedValue">50%</output></label><input id="liveSpeed" type="range" min="1" max="100" value="50"></div>
+        <div class="live-speed"><label for="liveVibrationSpeed"><span>Скорость вибрации</span><output id="liveVibrationSpeedValue">50%</output></label><input id="liveVibrationSpeed" type="range" min="1" max="100" value="50"></div>
+      </div>
+    </div>
+  </section>
+  <video id="keepAliveVideo" muted playsinline loop aria-hidden="true" style="position:absolute;width:1px;height:1px;opacity:.001;pointer-events:none"></video>
+</main>
+
+<script>
+(() => {
+  "use strict";
+  const app=document.getElementById("app"),canvas=document.getElementById("pattern"),context=canvas.getContext("2d",{alpha:false}),setup=document.getElementById("setup"),runningUi=document.getElementById("runningUi"),startButton=document.getElementById("start"),stopButton=document.getElementById("stop"),speed=document.getElementById("speed"),liveSpeed=document.getElementById("liveSpeed"),speedValue=document.getElementById("speedValue"),liveSpeedValue=document.getElementById("liveSpeedValue"),vibration=document.getElementById("vibration"),liveVibration=document.getElementById("liveVibration"),vibrationSpeed=document.getElementById("vibrationSpeed"),liveVibrationSpeed=document.getElementById("liveVibrationSpeed"),vibrationSpeedValue=document.getElementById("vibrationSpeedValue"),liveVibrationSpeedValue=document.getElementById("liveVibrationSpeedValue"),wakeStatus=document.getElementById("wakeStatus"),cycleLabel=document.getElementById("cycle"),keepAliveVideo=document.getElementById("keepAliveVideo");
+
+  const tile=document.createElement("canvas"),tileContext=tile.getContext("2d"),keepAliveCanvas=document.createElement("canvas"),keepAliveContext=keepAliveCanvas.getContext("2d");
+  let running=false,wakeLock=null,vibrationTimer=null,animationFrame=0,lastTime=0,phase=0,cycle=1,lastPosition={x:0,y:0},trajectory=createTrajectory();
+
+  function makeTile(){
+    const size=192,cell=12;
+    tile.width=tile.height=size;
+    tileContext.fillStyle="#f6f2e7";
+    tileContext.fillRect(0,0,size,size);
+    tileContext.strokeStyle="#050505";
+    tileContext.lineWidth=3;
+    tileContext.lineCap="square";
+    for(let y=0;y<size;y+=cell){
+      for(let x=0;x<size;x+=cell){
+        const mode=((x/cell)*7+(y/cell)*11)%4;
+        tileContext.beginPath();
+        if(mode===0){tileContext.moveTo(x,y+cell);tileContext.lineTo(x,y);tileContext.lineTo(x+cell,y)}
+        if(mode===1){tileContext.moveTo(x,y);tileContext.lineTo(x+cell,y+cell);tileContext.moveTo(x+cell/2,y);tileContext.lineTo(x+cell,y+cell/2)}
+        if(mode===2){tileContext.arc(x+cell/2,y+cell/2,cell*.3,0,Math.PI*2)}
+        if(mode===3){tileContext.moveTo(x,y+cell/2);tileContext.lineTo(x+cell/2,y);tileContext.lineTo(x+cell,y+cell/2);tileContext.lineTo(x+cell/2,y+cell);tileContext.closePath()}
+        tileContext.stroke();
+      }
+    }
+  }
+
+  function resize(){
+    const scale=Math.min(devicePixelRatio||1,2),width=innerWidth,height=innerHeight;
+    canvas.width=Math.round(width*scale);canvas.height=Math.round(height*scale);
+    canvas.style.width=width+"px";canvas.style.height=height+"px";
+    context.setTransform(scale,0,0,scale,0,0);
+    draw(lastPosition.x,lastPosition.y);
+  }
+
+  function createTrajectory(){
+    const shapes=["circle","figure8","flower","rounded"],shape=shapes[Math.floor(Math.random()*shapes.length)];
+    return{shape,angle:Math.random()*Math.PI*2,direction:Math.random()<.5?-1:1,radius:18+Math.random()*15};
+  }
+
+  function positionAt(value){
+    const t=value*Math.PI*2*trajectory.direction,r=trajectory.radius;
+    let x=0,y=0;
+    if(trajectory.shape==="circle"){x=r*(Math.cos(t)-1);y=r*Math.sin(t)}
+    if(trajectory.shape==="figure8"){x=r*Math.sin(t);y=r*.72*Math.sin(t*2)}
+    if(trajectory.shape==="flower"){x=r*Math.sin(t)+r*.25*Math.sin(t*3);y=r*Math.sin(t*2)*.68}
+    if(trajectory.shape==="rounded"){x=r*(Math.cos(t)-1)+r*.18*(Math.cos(t*3)-1);y=r*.78*Math.sin(t)}
+    const cos=Math.cos(trajectory.angle),sin=Math.sin(trajectory.angle);
+    return{x:x*cos-y*sin,y:x*sin+y*cos};
+  }
+
+  function draw(offsetX,offsetY){
+    const width=canvas.clientWidth||innerWidth,height=canvas.clientHeight||innerHeight,pattern=context.createPattern(tile,"repeat");
+    context.save();
+    context.setTransform(devicePixelRatio>2?2:devicePixelRatio||1,0,0,devicePixelRatio>2?2:devicePixelRatio||1,0,0);
+    context.fillStyle="#f6f2e7";context.fillRect(0,0,width,height);
+    context.translate(offsetX-192,offsetY-192);context.fillStyle=pattern;context.fillRect(0,0,width+384,height+384);
+    context.restore();
+  }
+
+  function animate(time){
+    if(!running)return;
+    const delta=Math.min((time-lastTime)/1000,.05)||0,lastPhase=phase,speedNumber=Number(speed.value),cyclesPerSecond=.11+Math.pow(speedNumber/100,1.35)*1.65;
+    lastTime=time;phase+=delta*cyclesPerSecond;
+    if(phase>=1){
+      phase%=1;cycle++;trajectory=createTrajectory();cycleLabel.textContent="Круг "+cycle;
+    }
+    lastPosition=positionAt(phase);
+    draw(lastPosition.x,lastPosition.y);
+    animationFrame=requestAnimationFrame(animate);
+  }
+
+  async function requestFullscreen(){
+    try{
+      if(!document.fullscreenElement){
+        const target=document.documentElement;
+        await (target.requestFullscreen?.({navigationUI:"hide"})||target.webkitRequestFullscreen?.());
+      }
+      screen.orientation?.lock?.("portrait")?.catch(()=>{});
+    }catch(error){wakeStatus.textContent="Полный экран запрещен браузером"}
+  }
+
+  async function requestWakeLock(){
+    try{
+      if("wakeLock" in navigator){
+        wakeLock=await navigator.wakeLock.request("screen");
+        wakeStatus.textContent="Экран не погаснет";
+        wakeLock.addEventListener("release",()=>{if(running)wakeStatus.textContent="Защита экрана временно снята"});
+      }else wakeStatus.textContent="Резервное удержание экрана";
+    }catch(error){wakeStatus.textContent="Резервное удержание экрана"}
+  }
+
+  async function startKeepAliveVideo(){
+    try{
+      keepAliveCanvas.width=keepAliveCanvas.height=2;
+      keepAliveContext.fillStyle="#000";keepAliveContext.fillRect(0,0,2,2);
+      if(keepAliveCanvas.captureStream){keepAliveVideo.srcObject=keepAliveCanvas.captureStream(1);await keepAliveVideo.play()}
+    }catch(error){}
+  }
+
+  function updateVibration(){
+    clearInterval(vibrationTimer);vibrationTimer=null;navigator.vibrate?.(0);
+    if(!running||!vibration.checked||!("vibrate" in navigator))return;
+    const value=Number(vibrationSpeed.value),delay=Math.round(3200-Math.pow(value/100,.72)*2850),pulseLength=Math.round(28+value*.22),pulse=()=>navigator.vibrate([pulseLength,70,pulseLength]);
+    pulse();vibrationTimer=setInterval(pulse,delay);
+  }
+
+  function syncSpeed(source){
+    const value=source.value;speed.value=liveSpeed.value=value;speedValue.textContent=liveSpeedValue.textContent=value+"%";
+  }
+
+  function syncVibration(source){vibration.checked=liveVibration.checked=source.checked;updateVibration()}
+
+  function syncVibrationSpeed(source){
+    const value=source.value;vibrationSpeed.value=liveVibrationSpeed.value=value;vibrationSpeedValue.textContent=liveVibrationSpeedValue.textContent=value+"%";updateVibration();
+  }
+
+  function showUi(){
+    if(!running)return;
+    runningUi.classList.add("visible");
+  }
+
+  async function start(){
+    if(running)return;
+    running=true;phase=0;cycle=1;trajectory=createTrajectory();lastTime=performance.now();
+    setup.classList.add("hidden");runningUi.classList.add("visible");liveVibration.checked=vibration.checked;
+    await Promise.allSettled([requestFullscreen(),requestWakeLock(),startKeepAliveVideo()]);
+    updateVibration();showUi();animationFrame=requestAnimationFrame(animate);
+  }
+
+  async function stop(){
+    running=false;cancelAnimationFrame(animationFrame);clearInterval(vibrationTimer);navigator.vibrate?.(0);
+    try{await wakeLock?.release()}catch(error){}wakeLock=null;
+    keepAliveVideo.pause();keepAliveVideo.srcObject=null;
+    runningUi.classList.remove("visible");setup.classList.remove("hidden");wakeStatus.textContent="Экран активен";
+    if(document.fullscreenElement)document.exitFullscreen?.().catch(()=>{});
+  }
+
+  speed.addEventListener("input",()=>syncSpeed(speed));liveSpeed.addEventListener("input",()=>{syncSpeed(liveSpeed);showUi()});
+  vibration.addEventListener("change",()=>syncVibration(vibration));liveVibration.addEventListener("change",()=>{syncVibration(liveVibration);showUi()});
+  vibrationSpeed.addEventListener("input",()=>syncVibrationSpeed(vibrationSpeed));liveVibrationSpeed.addEventListener("input",()=>{syncVibrationSpeed(liveVibrationSpeed);showUi()});
+  startButton.addEventListener("click",start);stopButton.addEventListener("click",stop);
+  document.addEventListener("visibilitychange",()=>{if(running&&document.visibilityState==="visible")requestWakeLock()});
+  document.addEventListener("fullscreenchange",()=>{if(running)showUi()});
+  addEventListener("resize",resize,{passive:true});
+  makeTile();resize();syncSpeed(speed);syncVibrationSpeed(vibrationSpeed);
+})();
+</script>
+</body>
+</html>
